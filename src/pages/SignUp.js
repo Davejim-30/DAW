@@ -1,21 +1,21 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import { Box, Container, Typography, TextField, Button, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
 import { UserLevels, UserRoles } from '../constants/constants';
 import { Link, useNavigate } from 'react-router-dom';
 import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from '../firebase'
+import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useIdentity } from '../providers/IdentityProvider';
+import Perfil from './Perfil'; 
 
 function SignUp() {
-
   const { updateIdentity } = useIdentity();
   const navigate = useNavigate();
 
-  const [level, setLevel] = useState('');
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [level, setLevel] = useState('');
   const [password, setPassword] = useState('');
 
   const handleChange = (event) => {
@@ -29,7 +29,6 @@ function SignUp() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Create a new user in your users collection
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         lastName: lastName,
@@ -42,7 +41,7 @@ function SignUp() {
       navigate('/');
 
     } catch (error) {
-      console.error('Error signing up with email and password', error);
+      console.error('Error al registrarse con correo electrónico y contraseña', error);
     }
   };
 
@@ -112,14 +111,14 @@ function SignUp() {
           <Button variant="contained" color="primary" onClick={handleSubmit}>
             Registrarse
           </Button>
-
         </Box>
         <Typography variant="body1" align="center">
           ¿Ya tienes una cuenta? <Link to="/signin">Iniciar sesión</Link>
         </Typography>
       </Box>
+      <Perfil nameProp={name} lastNameProp={lastName} emailProp={email} levelProp={level} /> 
     </Container>
   );
 }
 
-export default SignUp
+export default SignUp;
