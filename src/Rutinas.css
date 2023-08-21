@@ -1,0 +1,59 @@
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-image: url('/public/imagenes/logologin.JPG');
+    background-size: cover;
+  }
+  
+
+  .form-container {
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 80px;
+    border-radius: 10px;
+    width: 400px;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: px;
+    border: 1px solid #080000;
+    border-radius: 5px;
+  }
+  
+  .add-button {
+    width: 100%;
+    padding: 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+
+  .rutina-list {
+    margin-top: 200px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .rutina-info {
+    background-color: rgba(9, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    width: 400px;
+  }
+  
+  .exercise-info {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #0f0101;
+  }
+  

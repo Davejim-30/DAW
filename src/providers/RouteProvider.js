@@ -30,7 +30,7 @@ function RouteProvider() {
             element: (
                 <AuthRoute>
                     <Header />
-                    <PageWrapper>
+                    <PageWrapper >
                         <Rutinas />
                     </PageWrapper>
                 </AuthRoute>
@@ -41,7 +41,7 @@ function RouteProvider() {
             element: (
                 <AuthRoute>
                     <Header />
-                    <PageWrapper>
+                    <PageWrapper linksFondos='/imagenes/rutinaL.JPG'>
                         <Rutinas />
                     </PageWrapper>
                 </AuthRoute>
