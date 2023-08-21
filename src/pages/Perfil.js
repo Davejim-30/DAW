@@ -1,6 +1,9 @@
 import { styled } from '@mui/material';
 import { Avatar, Button, TextField, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useIdentity } from '../providers/IdentityProvider';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Root = styled('div')({
   display: 'flex',
@@ -24,15 +27,34 @@ const SubmitButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(3, 0, 2),
 }));
 
-function Perfil({ nameProp, lastNameProp, emailProp, levelProp }) {
-  const [name, setName] = useState(nameProp);
-  const [lastName, setLastName] = useState(lastNameProp);
-  const [email, setEmail] = useState(emailProp);
-  const [level, setLevel] = useState(levelProp);
+function Perfil() {
+  const { user } = useIdentity();
+  const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [level, setLevel] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingLastName, setIsEditingLastName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [isEditingLevel, setIsEditingLevel] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setName(userData.name || '');
+          setLastName(userData.lastName || '');
+          setEmail(userData.email || '');
+          setLevel(userData.level || '');
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
 
   const handleNameChange = (event) => {
     if (isEditingName) {
@@ -52,20 +74,23 @@ function Perfil({ nameProp, lastNameProp, emailProp, levelProp }) {
     }
   };
 
-  const handleLevelChange = (event) => {
-    if (isEditingLevel) {
-      setLevel(event.target.value);
-    }
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (isEditingName || isEditingLastName || isEditingEmail || isEditingLevel) {
-      console.log('Datos actualizados:', { name, lastName, email, level });
+    if (isEditingName || isEditingLastName || isEditingEmail) {
+      console.log('Datos actualizados:', { name, lastName, email });
       setIsEditingName(false);
       setIsEditingLastName(false);
       setIsEditingEmail(false);
-      setIsEditingLevel(false);
+
+      if (user) {
+        const docRef = doc(db, 'users', user.uid);
+        await updateDoc(docRef, {
+          name: name,
+          lastName: lastName,
+          email: email,
+        });
+        setIsSaved(true);
+      }
     }
   };
 
@@ -79,10 +104,6 @@ function Perfil({ nameProp, lastNameProp, emailProp, levelProp }) {
 
   const handleEditEmail = () => {
     setIsEditingEmail(true);
-  };
-
-  const handleEditLevel = () => {
-    setIsEditingLevel(true);
   };
 
   return (
@@ -156,30 +177,20 @@ function Perfil({ nameProp, lastNameProp, emailProp, levelProp }) {
           </Button>
         )}
 
-        <TextField
-          variant="outlined"
-          margin="normal"
-          required
+        <SubmitButton
+          type="submit"
           fullWidth
-          id="level"
-          label="Nivel"
-          name="level"
-          value={level}
-          onChange={handleLevelChange}
-          InputProps={{
-            readOnly: !isEditingLevel,
-          }}
-        />
-        {!isEditingLevel && (
-          <Button variant="outlined" onClick={handleEditLevel}>
-            Editar
-          </Button>
-        )}
+          variant="contained"
+          color="primary"
+          disabled={!isEditingName && !isEditingLastName && !isEditingEmail}
+        >
+          Guardar cambios
+        </SubmitButton>
 
-        {(isEditingName || isEditingLastName || isEditingEmail || isEditingLevel) && (
-          <SubmitButton type="submit" fullWidth variant="contained" color="primary">
-            Guardar cambios
-          </SubmitButton>
+        {isSaved && (
+          <Typography variant="body1" color="success">
+            Los cambios han sido guardados correctamente.
+          </Typography>
         )}
       </Form>
     </Root>
