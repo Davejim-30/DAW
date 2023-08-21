@@ -1,124 +1,183 @@
-import React, { useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
-import { UserLevels, UserRoles } from '../constants/constants';
-import { Link, useNavigate } from 'react-router-dom';
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { styled } from '@mui/material';
+import { Avatar, Button, TextField, Typography } from '@mui/material';
+import React, { useState, useEffect } from 'react';
 import { useIdentity } from '../providers/IdentityProvider';
-import Perfil from './Perfil'; 
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
-function SignUp() {
-  const { updateIdentity } = useIdentity();
-  const navigate = useNavigate();
+const Root = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  padding: (theme) => theme.spacing(4),
+});
 
+const AvatarStyled = styled(Avatar)({
+  width: (theme) => theme.spacing(12),
+  height: (theme) => theme.spacing(12),
+  marginBottom: (theme) => theme.spacing(2),
+});
+
+const Form = styled('form')({
+  width: '100%',
+  marginTop: (theme) => theme.spacing(1),
+});
+
+const SubmitButton = styled(Button)(({ theme }) => ({
+  margin: theme.spacing(3, 0, 2),
+}));
+
+function Perfil() {
+  const { user } = useIdentity();
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [level, setLevel] = useState('');
-  const [password, setPassword] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingLastName, setIsEditingLastName] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
 
-  const handleChange = (event) => {
-    setLevel(event.target.value);
-  };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setName(userData.name || '');
+          setLastName(userData.lastName || '');
+          setEmail(userData.email || '');
+          setLevel(userData.level || '');
+        }
+      }
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    fetchUserData();
+  }, [user]);
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      await setDoc(doc(db, 'users', user.uid), {
-        name: name,
-        lastName: lastName,
-        level: level,
-        email: email,
-        role: UserRoles.USUARIO
-      });
-
-      updateIdentity(user);
-      navigate('/');
-
-    } catch (error) {
-      console.error('Error al registrarse con correo electrónico y contraseña', error);
+  const handleNameChange = (event) => {
+    if (isEditingName) {
+      setName(event.target.value);
     }
   };
 
+  const handleLastNameChange = (event) => {
+    if (isEditingLastName) {
+      setLastName(event.target.value);
+    }
+  };
+
+  const handleEmailChange = (event) => {
+    if (isEditingEmail) {
+      setEmail(event.target.value);
+    }
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (isEditingName || isEditingLastName || isEditingEmail) {
+      console.log('Datos actualizados:', { name, lastName, email });
+      setIsEditingName(false);
+      setIsEditingLastName(false);
+      setIsEditingEmail(false);
+    }
+  };
+
+  const handleEditName = () => {
+    setIsEditingName(true);
+  };
+
+  const handleEditLastName = () => {
+    setIsEditingLastName(true);
+  };
+
+  const handleEditEmail = () => {
+    setIsEditingEmail(true);
+  };
+
   return (
-    <Container maxWidth="sm">
-      <Box
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        bgcolor="background.paper"
-        p={2}
-        boxShadow={1}
-      >
-        <Typography variant="h4" component="h1" gutterBottom>
-          Registrarse
-        </Typography>
+    <Root>
+      <Typography component="h1" variant="h5">
+        Perfil
+      </Typography>
+      <AvatarStyled />
+      <Form onSubmit={handleSubmit} noValidate>
         <TextField
+          variant="outlined"
+          margin="normal"
+          required
+          fullWidth
+          id="name"
           label="Nombre"
-          margin="normal"
-          variant="outlined"
-          fullWidth
+          name="name"
+          autoComplete="given-name"
+          autoFocus
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={handleNameChange}
+          InputProps={{
+            readOnly: !isEditingName,
+          }}
         />
-        <TextField
-          label="Apellido"
-          margin="normal"
-          variant="outlined"
-          fullWidth
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-        />
-        <FormControl fullWidth variant="outlined" margin="normal">
-          <InputLabel id="user-level-label">Nivel</InputLabel>
-          <Select
-            labelId="user-level-label"
-            value={level}
-            onChange={handleChange}
-            label="Nivel"
-          >
-            {Object.values(UserLevels).map((level) => (
-              <MenuItem key={level} value={level}>
-                {level}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          label="Correo electrónico"
-          margin="normal"
-          variant="outlined"
-          fullWidth
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          label="Contraseña"
-          margin="normal"
-          variant="outlined"
-          fullWidth
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Box mt={2}>
-          <Button variant="contained" color="primary" onClick={handleSubmit}>
-            Registrarse
+        {!isEditingName && (
+          <Button variant="outlined" onClick={handleEditName}>
+            Editar
           </Button>
-        </Box>
-        <Typography variant="body1" align="center">
-          ¿Ya tienes una cuenta? <Link to="/signin">Iniciar sesión</Link>
-        </Typography>
-      </Box>
-      <Perfil nameProp={name} lastNameProp={lastName} emailProp={email} levelProp={level} /> 
-    </Container>
+        )}
+
+        <TextField
+          variant="outlined"
+          margin="normal"
+          required
+          fullWidth
+          id="lastName"
+          label="Apellido"
+          name="lastName"
+          autoComplete="family-name"
+          value={lastName}
+          onChange={handleLastNameChange}
+          InputProps={{
+            readOnly: !isEditingLastName,
+          }}
+        />
+        {!isEditingLastName && (
+          <Button variant="outlined" onClick={handleEditLastName}>
+            Editar
+          </Button>
+        )}
+
+        <TextField
+          variant="outlined"
+          margin="normal"
+          required
+          fullWidth
+          id="email"
+          label="Correo electrónico"
+          name="email"
+          autoComplete="email"
+          value={email}
+          onChange={handleEmailChange}
+          InputProps={{
+            readOnly: !isEditingEmail,
+          }}
+        />
+        {!isEditingEmail && (
+          <Button variant="outlined" onClick={handleEditEmail}>
+            Editar
+          </Button>
+        )}
+
+        <SubmitButton
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          disabled={!isEditingName && !isEditingLastName && !isEditingEmail}
+        >
+          Guardar cambios
+        </SubmitButton>
+      </Form>
+    </Root>
   );
 }
 
-export default SignUp;
+export default Perfil;
