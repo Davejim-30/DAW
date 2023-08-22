@@ -1,9 +1,10 @@
 import { styled } from '@mui/material';
-import { Avatar, Button, TextField, Typography } from '@mui/material';
+import { Alert, Avatar, Button, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { useIdentity } from '../providers/IdentityProvider';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+
 
 const Root = styled('div')({
   display: 'flex',
@@ -37,6 +38,11 @@ function Perfil() {
   const [isEditingLastName, setIsEditingLastName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [bodyMeasurements, setBodyMeasurements] = useState([]);
+  const [newMeasurement, setNewMeasurement] = useState({
+    bodyFatPercentage: '',
+    weight: '',
+  });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -53,7 +59,21 @@ function Perfil() {
       }
     };
 
+    const fetchBodyMeasurements = async () => {
+      if (user) {
+        const q = query(collection(db, 'bodyMeasurementRecords'), where('userId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        const measurements = [];
+        querySnapshot.forEach((doc) => {
+          const measurementData = doc.data();
+          measurements.push({ ...measurementData, id: doc.id });
+        });
+        setBodyMeasurements(measurements);
+      }
+    };
+        
     fetchUserData();
+    fetchBodyMeasurements();
   }, [user]);
 
   const handleNameChange = (event) => {
@@ -74,6 +94,13 @@ function Perfil() {
     }
   };
 
+  const handleMeasurementChange = (event) => {
+    setNewMeasurement({
+      ...newMeasurement,
+      [event.target.name]: event.target.value,
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (isEditingName || isEditingLastName || isEditingEmail) {
@@ -91,6 +118,41 @@ function Perfil() {
         });
         setIsSaved(true);
       }
+    }
+  };
+
+  const handleAddMeasurement = async (event) => {
+    event.preventDefault();
+    if (user) {
+      const measurementData = {
+        ...newMeasurement,
+        userId: user.uid,
+        measurementDate: Date.now(),
+      };
+      const docRef = await addDoc(collection(db, 'bodyMeasurementRecords'), measurementData);
+      setBodyMeasurements([...bodyMeasurements, { ...measurementData, id: docRef.id }]);
+      setNewMeasurement({
+        bodyFatPercentage: '',
+        weight: '',
+      });
+    }
+  };
+
+  const handleDeleteMeasurement = async (measurementId) => {
+    if (user) {
+      await deleteDoc(doc(db, 'bodyMeasurementRecords', measurementId));
+      setBodyMeasurements(bodyMeasurements.filter((measurement) => measurement.id !== measurementId));
+    }
+  };
+
+  const handleEditMeasurement = async (measurementId) => {
+    const measurementToUpdate = bodyMeasurements.find((measurement) => measurement.id === measurementId);
+    if (measurementToUpdate) {
+      setNewMeasurement({
+        bodyFatPercentage: measurementToUpdate.bodyFatPercentage,
+        weight: measurementToUpdate.weight,
+      });
+      handleDeleteMeasurement(measurementId);
     }
   };
 
@@ -188,11 +250,79 @@ function Perfil() {
         </SubmitButton>
 
         {isSaved && (
-          <Typography variant="body1" color="success">
+          <Alert severity="success">
             Los cambios han sido guardados correctamente.
-          </Typography>
+          </Alert>
         )}
       </Form>
+
+      <Typography component="h2" variant="h6">
+        Tabla de mediciones
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Fecha</TableCell>
+              <TableCell>Porcentaje de grasa corporal</TableCell>
+              <TableCell align="right">Peso</TableCell>
+              <TableCell align="right">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {bodyMeasurements.map((measurement) => (
+              <TableRow key={measurement.id}>
+                <TableCell>{new Date(measurement.measurementDate).toLocaleDateString()}</TableCell>
+                <TableCell>{measurement.bodyFatPercentage}%</TableCell>
+                <TableCell align="right">{measurement.weight} Kg</TableCell>
+                <TableCell align="right">
+                  <Button variant="outlined" onClick={() => handleEditMeasurement(measurement.id)}>
+                    Editar
+                  </Button>
+                  <Button variant="outlined" onClick={() => handleDeleteMeasurement(measurement.id)}>
+                    Borrar
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            <TableRow>
+              <TableCell>
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="bodyFatPercentage"
+                  label="Porcentaje de grasa corporal"
+                  name="bodyFatPercentage"
+                  type="number"
+                  value={newMeasurement.bodyFatPercentage}
+                  onChange={handleMeasurementChange}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="weight"
+                  label="Peso"
+                  name="weight"
+                  type="number"
+                  value={newMeasurement.weight}
+                  onChange={handleMeasurementChange}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <Button variant="contained" color="primary" onClick={handleAddMeasurement}>
+                  Agregar
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Root>
   );
 }
