@@ -71,7 +71,7 @@ function Perfil() {
         setBodyMeasurements(measurements);
       }
     };
-        
+
     fetchUserData();
     fetchBodyMeasurements();
   }, [user]);

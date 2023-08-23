@@ -6,7 +6,6 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useIdentity } from '../providers/IdentityProvider';
-import Perfil from './Perfil'; 
 
 function SignUp() {
   const { updateIdentity } = useIdentity();
@@ -19,7 +18,7 @@ function SignUp() {
   const [password, setPassword] = useState('');
   const [passwordValid, setPasswordValid] = useState(true);
 
-  
+
   const handleChange = (event) => {
     setLevel(event.target.value);
   };
@@ -130,7 +129,7 @@ function SignUp() {
           </Typography>
         )}
         <Box mt={2}>
-        <Button
+          <Button
             variant="contained"
             color="primary"
             onClick={handleSubmit}
@@ -143,7 +142,6 @@ function SignUp() {
           ¿Ya tienes una cuenta? <Link to="/signin">Iniciar sesión</Link>
         </Typography>
       </Box>
-      <Perfil nameProp={name} lastNameProp={lastName} emailProp={email} levelProp={level} /> 
     </Container>
   );
 }
